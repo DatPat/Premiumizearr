@@ -1,0 +1,17 @@
+version: '3.2'
+
+services:
+  downloader:
+    build: .
+    restart: on-failure
+    env_file: .env
+    ports:
+      - "8182:8182"
+    volumes:
+      - /workspace/node_modules
+      - .:/workspace
+      - ./blackhole:/blackhole
+      - ./downloads:/downloads
+      - ./transfers:/transfers
+      - ./data:/data
+      - ./unzip:/unzip

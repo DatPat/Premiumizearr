@@ -270,9 +270,12 @@ func (manager *TransferManagerService) HandleFinishedItem(item premiumizeme.Item
 
 		err = manager.premiumizemeClient.DeleteFolder(item.ID)
 		if err != nil {
-			manager.removeDownload(item.Name)
-			log.Error("Error deleting folder on premiumize.me: %s", err)
-			return
+			err = manager.premiumizemeClient.DeleteFile(item.ID)
+			if err != nil {
+				manager.removeDownload(item.Name)
+				log.Error("[%s]error deleting folder from premiumize.me: %s", item.Name, err)
+				return
+			}
 		}
 
 		//Remove download entry from downloads map

@@ -62,7 +62,7 @@ func (dw *DirectoryWatcherService) GetStatus() string {
 	return dw.status
 }
 
-//Start: This is the entrypoint for the directory watcher
+// Start: This is the entrypoint for the directory watcher
 func (dw *DirectoryWatcherService) Start() {
 	log.Info("Starting directory watcher...")
 
@@ -102,7 +102,7 @@ func (dw *DirectoryWatcherService) Start() {
 	} else {
 		log.Info("Starting directory watcher...")
 		dw.watchDirectory = directory_watcher.NewDirectoryWatcher(dw.config.BlackholeDirectory,
-			false,
+			true,
 			dw.checkFile,
 			dw.addFileToQueue,
 		)
@@ -121,32 +121,32 @@ func (dw *DirectoryWatcherService) directoryScan(p string) {
 	for _, file := range files {
 		go func(file os.FileInfo) {
 			file_path := path.Join(p, file.Name())
-			if dw.checkFile(file_path) {
+			if dw.checkFile(file_path) == 1 {
 				dw.addFileToQueue(file_path)
 			}
 		}(file)
 	}
 }
 
-func (dw *DirectoryWatcherService) checkFile(path string) bool {
+func (dw *DirectoryWatcherService) checkFile(path string) int {
 	log.Tracef("Checking file %s", path)
 
 	fi, err := os.Stat(path)
 	if err != nil {
 		log.Errorf("Error checking file %s", path)
-		return false
+		return 0
 	}
 
 	if fi.IsDir() {
-		log.Errorf("Directory created in blackhole %s ignoring (Warning premiumizearrd does not look in subfolders!)", path)
-		return false
+		//log.Println("Refering directory created in blackhole to watch list!: ", path)
+		return 2
 	}
 
 	ext := filepath.Ext(path)
-	if ext == ".nzb" || ext == ".magnet" {
-		return true
+	if ext == ".nzb" || ext == ".magnet" || ext == ".torrent" {
+		return 1
 	} else {
-		return false
+		return 0
 	}
 }
 

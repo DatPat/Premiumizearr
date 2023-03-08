@@ -189,6 +189,8 @@ func (pm *Premiumizeme) CreateTransfer(filePath string, parentID string) error {
 		request, err = createNZBRequest(file, &url, parentID)
 	case ".magnet":
 		request, err = createMagnetRequest(file, &url, parentID)
+	case ".torrent":
+		request, err = createTorrentRequest(file, &url, parentID)
 	}
 
 	if err != nil {
@@ -222,6 +224,14 @@ func (pm *Premiumizeme) CreateTransfer(filePath string, parentID string) error {
 	return nil
 }
 
+/*
+curl -X 'POST' \
+  'https://www.premiumize.me/api/folder/delete' \
+  -H 'accept: application/json' \
+  -H 'Content-Type: application/x-www-form-urlencoded' \
+  -d 'id=kJkdGhHKC0BaZOvBo4ckBQ'
+*/
+
 func (pm *Premiumizeme) DeleteFolder(folderID string) error {
 	if pm.APIKey == "" {
 		return ErrAPIKeyNotSet
@@ -229,7 +239,7 @@ func (pm *Premiumizeme) DeleteFolder(folderID string) error {
 
 	url, err := pm.createPremiumizemeURL("/folder/delete")
 	if err != nil {
-		return err
+		return fmt.Errorf("couldn't create url: %s", err)
 	}
 
 	q := url.Query()
@@ -237,18 +247,18 @@ func (pm *Premiumizeme) DeleteFolder(folderID string) error {
 	url.RawQuery = q.Encode()
 
 	client := &http.Client{}
-	request, err := http.NewRequest("DELETE", url.String(), nil)
+	request, err := http.NewRequest("POST", url.String(), nil)
 	if err != nil {
-		return err
+		return fmt.Errorf("couldn't construct delete request: %s", err)
 	}
 
 	resp, err := client.Do(request)
 	if err != nil {
-		return err
+		return fmt.Errorf("couldn't execute delete request: %s", err)
 	}
 
 	if resp.StatusCode != 200 {
-		return fmt.Errorf("error deleting folder: %s (%d)", resp.Status, resp.StatusCode)
+		return fmt.Errorf("error deleting folder: (%d)", resp.StatusCode)
 	}
 
 	defer resp.Body.Close()
@@ -257,11 +267,58 @@ func (pm *Premiumizeme) DeleteFolder(folderID string) error {
 	err = json.NewDecoder(resp.Body).Decode(&res)
 
 	if err != nil {
-		return err
+		return fmt.Errorf("couldn't decode response: %s", res)
 	}
 
 	if res.Status != "success" {
-		return fmt.Errorf(res.Message)
+		return fmt.Errorf("status from %s wasn't a success %s %s", folderID, res.Message, res.Status)
+	}
+
+	log.Tracef("Folder deleted: %+v", res)
+
+	return nil
+}
+
+func (pm *Premiumizeme) DeleteFile(folderID string) error {
+	if pm.APIKey == "" {
+		return ErrAPIKeyNotSet
+	}
+
+	url, err := pm.createPremiumizemeURL("/item/delete")
+	if err != nil {
+		return fmt.Errorf("couldn't create url: %s", err)
+	}
+
+	q := url.Query()
+	q.Set("id", folderID)
+	url.RawQuery = q.Encode()
+
+	client := &http.Client{}
+	request, err := http.NewRequest("POST", url.String(), nil)
+	if err != nil {
+		return fmt.Errorf("couldn't construct delete request: %s", err)
+	}
+
+	resp, err := client.Do(request)
+	if err != nil {
+		return fmt.Errorf("couldn't execute delete request: %s", err)
+	}
+
+	if resp.StatusCode != 200 {
+		return fmt.Errorf("error deleting folder: (%d)", resp.StatusCode)
+	}
+
+	defer resp.Body.Close()
+	res := SimpleResponse{}
+	log.Trace("Reading response")
+	err = json.NewDecoder(resp.Body).Decode(&res)
+
+	if err != nil {
+		return fmt.Errorf("couldn't decode response: %s", res)
+	}
+
+	if res.Status != "success" {
+		return fmt.Errorf("status from %s wasn't a success %s %s", folderID, res.Message, res.Status)
 	}
 
 	log.Tracef("Folder deleted: %+v", res)
@@ -397,6 +454,40 @@ func createMagnetRequest(file *os.File, url *url.URL, parentID string) (*http.Re
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 	part, err := writer.CreateFormField("src")
+
+	if err != nil {
+		return nil, err
+	}
+
+	io.Copy(part, file)
+	writer.Close()
+
+	part, err = writer.CreateFormField("folder_id")
+
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = part.Write([]byte(parentID))
+
+	if err != nil {
+		return nil, err
+	}
+
+	request, err := http.NewRequest("POST", url.String(), body)
+	request.Header.Add("Content-Type", writer.FormDataContentType())
+
+	if err != nil {
+		return nil, err
+	}
+
+	return request, nil
+}
+
+func createTorrentRequest(file *os.File, url *url.URL, parentID string) (*http.Request, error) {
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	part, err := writer.CreateFormFile("src", filepath.Base(file.Name()))
 
 	if err != nil {
 		return nil, err

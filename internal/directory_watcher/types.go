@@ -11,7 +11,7 @@ type WatchDirectory struct {
 	// Recursive is true if the directory should be watched recursively.
 	Recursive bool
 	// MatchFunction is the function to use to match files.
-	MatchFunction func(string) bool
+	MatchFunction func(string) int
 	// Callback is the function to call when a file is created that matches with MatchFunction.
 	CallbackFunction func(string)
 	// watcher is the fsnotify watcher.

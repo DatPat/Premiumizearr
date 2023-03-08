@@ -8,7 +8,7 @@ import (
 )
 
 // NewWatchDirectory creates a new WatchDirectory.
-func NewDirectoryWatcher(path string, recursive bool, matchFunction func(string) bool, callbackFunction func(string)) *WatchDirectory {
+func NewDirectoryWatcher(path string, recursive bool, matchFunction func(string) int, callbackFunction func(string)) *WatchDirectory {
 	return &WatchDirectory{
 		Path: path,
 		// TODO (Unused): Add recursive abilities
@@ -26,6 +26,7 @@ func (w *WatchDirectory) Watch() error {
 	}
 
 	go func() {
+		var action int = 1
 		for {
 			select {
 			case event, ok := <-w.Watcher.Events:
@@ -33,8 +34,11 @@ func (w *WatchDirectory) Watch() error {
 					return
 				}
 				if event.Op&fsnotify.Create == fsnotify.Create {
-					if w.MatchFunction(event.Name) {
+					action = w.MatchFunction(event.Name)
+					if action == 1 {
 						w.CallbackFunction(event.Name)
+					} else if action == 2 {
+						w.Watcher.Add(event.Name)
 					}
 				}
 			case _, ok := <-w.Watcher.Errors:
