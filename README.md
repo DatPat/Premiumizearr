@@ -1,15 +1,15 @@
 ## Changes in fork:
-Added support for torrent files
-Improved completion handling
-Added Docker-Compose config
+- Added support for torrent files
+- Improved completion handling
+- Added Docker-Compose config
 
 Known issues:
-Issues from upstream
-Subdirectory monitoring doesn't work yet
+- Issues from upstream
+- Subdirectory monitoring doesn't work yet
 
 Version for Unraid:
-https://hub.docker.com/r/datpat/premiumizearr/
-set PUID with the --user flag in extra-parameters
+- https://hub.docker.com/r/datpat/premiumizearr/
+- set PUID with the --user flag in extra-parameters
 
 Original Readme:
 # Premiumizearr
