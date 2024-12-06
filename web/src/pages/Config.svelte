@@ -107,7 +107,7 @@
       Name: "New Arr",
       URL: "http://localhost:1234",
       APIKey: "xxxxxxxx",
-      Type: "Sonarr",
+      Type: "Lidarr", // Changed default to Lidarr
     });
     //Force re-paint
     config.Arrs = [...config.Arrs];
@@ -224,6 +224,7 @@
                 items={[
                   { id: "Sonarr", text: "Sonarr" },
                   { id: "Radarr", text: "Radarr" },
+                  { id: "Lidarr", text: "Lidarr" }
                 ]}
                 disabled={inputDisabled}
               />
@@ -340,18 +341,3 @@
 >
   <p>{errorMessage}</p>
 </Modal>
-<!-- 
-
-{() => {
-                  console.log(testStatus.get(i));
-                  if (testStatus.get(i) == undefined)
-                    return "secondary";
-                  
-                    if (testStatus.get(i) === 3) {
-                    return "danger";
-                  } else {
-                    return "secondary";
-                  }
-                }}
-
--->
